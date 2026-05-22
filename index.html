@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QA Analyst Growth Tracker — L2 to L3</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="app-header no-print">
+    <div class="container">
+      <h1>QA Analyst Growth Tracker</h1>
+      <p class="subtitle">Level 2 &rarr; Level 3 progression with evidence capture</p>
+
+      <div class="identity-row">
+        <label>
+          Your name
+          <input type="text" id="userName" placeholder="e.g., Rex Breyer" autocomplete="name" />
+        </label>
+        <label>
+          Started tracking
+          <input type="date" id="startDate" />
+        </label>
+        <label>
+          Target review date
+          <input type="date" id="reviewDate" />
+        </label>
+      </div>
+
+      <div class="progress-row">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <span class="progress-label" id="progressLabel">0 of 0 completed (0%)</span>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs no-print">
+    <div class="container">
+      <button class="tab active" data-tab="checklist">L3 Checklist</button>
+      <button class="tab" data-tab="l2">L2 (current)</button>
+      <button class="tab" data-tab="senior">Senior preview</button>
+      <button class="tab" data-tab="actions">Export / Tools</button>
+    </div>
+  </nav>
+
+  <main class="container">
+    <!-- L3 Checklist tab -->
+    <section class="tab-panel active" data-panel="checklist">
+      <div class="role-intro">
+        <h2 id="l3-title"></h2>
+        <p id="l3-tagline" class="tagline"></p>
+        <details>
+          <summary>Role description</summary>
+          <p id="l3-intro"></p>
+          <p><a id="l3-source" href="#" target="_blank" rel="noopener">View source in Confluence &rarr;</a></p>
+        </details>
+      </div>
+
+      <div id="l3-checklist"></div>
+    </section>
+
+    <!-- L2 reference tab -->
+    <section class="tab-panel" data-panel="l2">
+      <div class="role-intro">
+        <h2 id="l2-title"></h2>
+        <p id="l2-tagline" class="tagline"></p>
+        <p id="l2-intro"></p>
+        <p><a id="l2-source" href="#" target="_blank" rel="noopener">View source in Confluence &rarr;</a></p>
+      </div>
+      <div id="l2-content" class="reference-content"></div>
+    </section>
+
+    <!-- Senior preview tab -->
+    <section class="tab-panel" data-panel="senior">
+      <div class="role-intro">
+        <h2 id="senior-title"></h2>
+        <p id="senior-tagline" class="tagline"></p>
+        <p id="senior-intro"></p>
+        <p><a id="senior-source" href="#" target="_blank" rel="noopener">View source in Confluence &rarr;</a></p>
+      </div>
+      <div id="senior-content" class="reference-content"></div>
+    </section>
+
+    <!-- Actions tab -->
+    <section class="tab-panel" data-panel="actions">
+      <h2>Export, share, and reset</h2>
+
+      <div class="action-card">
+        <h3>For your manager</h3>
+        <p>Generate a clean, single-document report of your L3 progress with all your evidence notes. Best for sharing during a 1:1, performance review, or promotion conversation.</p>
+        <div class="button-row">
+          <button id="printReport" class="btn primary">Print / Save as PDF</button>
+          <button id="exportHtml" class="btn">Download standalone HTML</button>
+        </div>
+      </div>
+
+      <div class="action-card">
+        <h3>Backup &amp; restore</h3>
+        <p>Save your progress to a JSON file (so you can move between computers or browsers) and reload it later.</p>
+        <div class="button-row">
+          <button id="exportJson" class="btn">Export JSON</button>
+          <label class="btn" for="importJsonFile">Import JSON</label>
+          <input type="file" id="importJsonFile" accept="application/json,.json" hidden />
+        </div>
+      </div>
+
+      <div class="action-card danger">
+        <h3>Start over</h3>
+        <p>Clear all locally stored progress and notes. This cannot be undone &mdash; export first if you want a backup.</p>
+        <button id="resetAll" class="btn danger">Reset everything</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Print-only report layout. Hidden on screen, shown on print. -->
+  <div id="printReportRegion" class="print-only"></div>
+
+  <footer class="app-footer no-print">
+    <div class="container">
+      <small>
+        Source pages last synced 2026-05-22 from the
+        <a href="https://patriotsoftware.atlassian.net/wiki/spaces/PDD" target="_blank" rel="noopener">PDD</a>
+        Confluence space. Data stays in your browser (localStorage); export to share.
+      </small>
+    </div>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

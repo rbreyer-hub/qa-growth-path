@@ -1,0 +1,419 @@
+/* QA Growth Tracker — frontend logic.
+ *
+ * State model (persisted to localStorage under STORAGE_KEY):
+ * {
+ *   version: 1,
+ *   identity: { name: string, startDate: string, reviewDate: string },
+ *   progress: {
+ *     "<sectionName>::<itemText>": {
+ *       completed: boolean,
+ *       completedDate: string,
+ *       notes: string
+ *     }
+ *   }
+ * }
+ *
+ * Keys are derived from L3 content so renaming a criterion in data.js will
+ * surface as a "new" item rather than silently moving progress.
+ */
+
+const STORAGE_KEY = "qa-growth-tracker.v1";
+
+const state = loadState();
+
+document.addEventListener("DOMContentLoaded", () => {
+  hydrateIdentity();
+  renderL3Checklist();
+  renderReferenceRole("l2");
+  renderReferenceRole("senior");
+  wireTabs();
+  wireActions();
+  updateProgress();
+});
+
+/* ---------- Persistence ---------- */
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultState();
+    const parsed = JSON.parse(raw);
+    if (!parsed.version) return defaultState();
+    return parsed;
+  } catch (err) {
+    console.warn("Failed to load saved state, starting fresh:", err);
+    return defaultState();
+  }
+}
+
+function defaultState() {
+  return {
+    version: 1,
+    identity: { name: "", startDate: "", reviewDate: "" },
+    progress: {},
+  };
+}
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function progressKey(sectionName, itemText) {
+  return `${sectionName}::${itemText}`;
+}
+
+function getProgress(sectionName, itemText) {
+  const key = progressKey(sectionName, itemText);
+  return state.progress[key] || { completed: false, completedDate: "", notes: "" };
+}
+
+function setProgress(sectionName, itemText, patch) {
+  const key = progressKey(sectionName, itemText);
+  state.progress[key] = { ...getProgress(sectionName, itemText), ...patch };
+  saveState();
+}
+
+/* ---------- Identity ---------- */
+function hydrateIdentity() {
+  const name = document.getElementById("userName");
+  const start = document.getElementById("startDate");
+  const review = document.getElementById("reviewDate");
+
+  name.value = state.identity.name || "";
+  start.value = state.identity.startDate || "";
+  review.value = state.identity.reviewDate || "";
+
+  name.addEventListener("input", () => {
+    state.identity.name = name.value;
+    saveState();
+  });
+  start.addEventListener("change", () => {
+    state.identity.startDate = start.value;
+    saveState();
+  });
+  review.addEventListener("change", () => {
+    state.identity.reviewDate = review.value;
+    saveState();
+  });
+}
+
+/* ---------- L3 checklist ---------- */
+function renderL3Checklist() {
+  const role = ROLES.l3;
+  document.getElementById("l3-title").textContent = role.title;
+  document.getElementById("l3-tagline").textContent = role.tagline;
+  document.getElementById("l3-intro").textContent = role.intro;
+  const src = document.getElementById("l3-source");
+  src.href = role.sourceUrl;
+  src.textContent = "View source in Confluence →";
+
+  const container = document.getElementById("l3-checklist");
+  container.innerHTML = "";
+
+  role.sections.forEach((section) => {
+    const block = document.createElement("div");
+    block.className = "section-block";
+    block.innerHTML = `<h3>${escapeHtml(section.name)}</h3>`;
+
+    section.items.forEach((itemText) => {
+      block.appendChild(renderCriterion(section.name, itemText));
+    });
+
+    container.appendChild(block);
+  });
+}
+
+function renderCriterion(sectionName, itemText) {
+  const data = getProgress(sectionName, itemText);
+  const wrapper = document.createElement("div");
+  wrapper.className = "criterion" + (data.completed ? " completed" : "");
+
+  wrapper.innerHTML = `
+    <div class="criterion-header">
+      <input type="checkbox" ${data.completed ? "checked" : ""} aria-label="Mark as completed" />
+      <div class="criterion-title">${escapeHtml(itemText)}</div>
+    </div>
+    <div class="criterion-body">
+      <div>
+        <label>Proof of completion / evidence</label>
+        <textarea placeholder="Describe what you did, link to tickets, training sessions, PRs, dashboards, etc. The more concrete, the better — your manager will read this.">${escapeHtml(
+          data.notes
+        )}</textarea>
+      </div>
+      <div class="criterion-meta">
+        <label>Date completed
+          <input type="date" value="${escapeAttr(data.completedDate)}" />
+        </label>
+      </div>
+    </div>
+  `;
+
+  const checkbox = wrapper.querySelector('input[type="checkbox"]');
+  const notes = wrapper.querySelector("textarea");
+  const dateInput = wrapper.querySelector('input[type="date"]');
+
+  checkbox.addEventListener("change", () => {
+    const completed = checkbox.checked;
+    const patch = { completed };
+    if (completed && !dateInput.value) {
+      const today = new Date().toISOString().slice(0, 10);
+      dateInput.value = today;
+      patch.completedDate = today;
+    }
+    setProgress(sectionName, itemText, patch);
+    wrapper.classList.toggle("completed", completed);
+    updateProgress();
+  });
+
+  notes.addEventListener("input", () => {
+    setProgress(sectionName, itemText, { notes: notes.value });
+  });
+
+  dateInput.addEventListener("change", () => {
+    setProgress(sectionName, itemText, { completedDate: dateInput.value });
+  });
+
+  return wrapper;
+}
+
+/* ---------- Reference roles (L2, Senior) ---------- */
+function renderReferenceRole(key) {
+  const role = ROLES[key];
+  document.getElementById(`${key}-title`).textContent = role.title;
+  document.getElementById(`${key}-tagline`).textContent = role.tagline;
+  document.getElementById(`${key}-intro`).textContent = role.intro;
+  const src = document.getElementById(`${key}-source`);
+  src.href = role.sourceUrl;
+  src.textContent = "View source in Confluence →";
+
+  const container = document.getElementById(`${key}-content`);
+  container.innerHTML = "";
+
+  role.sections.forEach((section) => {
+    const block = document.createElement("div");
+    block.className = "section-block";
+    const ul = document.createElement("ul");
+    section.items.forEach((item) => {
+      const li = document.createElement("li");
+      li.textContent = item;
+      ul.appendChild(li);
+    });
+    block.innerHTML = `<h3>${escapeHtml(section.name)}</h3>`;
+    block.appendChild(ul);
+    container.appendChild(block);
+  });
+}
+
+/* ---------- Tabs ---------- */
+function wireTabs() {
+  const tabs = document.querySelectorAll(".tab");
+  const panels = document.querySelectorAll(".tab-panel");
+  tabs.forEach((tab) => {
+    tab.addEventListener("click", () => {
+      tabs.forEach((t) => t.classList.remove("active"));
+      panels.forEach((p) => p.classList.remove("active"));
+      tab.classList.add("active");
+      const target = tab.dataset.tab;
+      document.querySelector(`.tab-panel[data-panel="${target}"]`).classList.add("active");
+    });
+  });
+}
+
+/* ---------- Progress bar ---------- */
+function updateProgress() {
+  const allItems = ROLES.l3.sections.flatMap((s) =>
+    s.items.map((i) => ({ section: s.name, item: i }))
+  );
+  const total = allItems.length;
+  const done = allItems.filter(({ section, item }) => getProgress(section, item).completed).length;
+  const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+
+  document.getElementById("progressFill").style.width = `${pct}%`;
+  document.getElementById("progressLabel").textContent = `${done} of ${total} completed (${pct}%)`;
+}
+
+/* ---------- Actions: export / import / report / reset ---------- */
+function wireActions() {
+  document.getElementById("exportJson").addEventListener("click", exportJson);
+  document.getElementById("importJsonFile").addEventListener("change", importJson);
+  document.getElementById("printReport").addEventListener("click", () => {
+    buildPrintReport();
+    window.print();
+  });
+  document.getElementById("exportHtml").addEventListener("click", exportStandaloneHtml);
+  document.getElementById("resetAll").addEventListener("click", resetAll);
+}
+
+function exportJson() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  downloadBlob(blob, `qa-growth-${(state.identity.name || "tracker").replace(/\s+/g, "-").toLowerCase()}-${todayIso()}.json`);
+}
+
+function importJson(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const incoming = JSON.parse(e.target.result);
+      if (!incoming || incoming.version !== 1) {
+        alert("That file doesn't look like a QA Growth Tracker export (missing version).");
+        return;
+      }
+      if (!confirm("Import will replace your current progress. Continue?")) return;
+      Object.assign(state, incoming);
+      saveState();
+      location.reload();
+    } catch (err) {
+      alert("Could not parse that file as JSON.");
+    }
+  };
+  reader.readAsText(file);
+  evt.target.value = "";
+}
+
+function resetAll() {
+  if (!confirm("Reset all progress, notes, and identity fields? This cannot be undone.")) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+/* ---------- Print report ---------- */
+function buildPrintReport() {
+  const role = ROLES.l3;
+  const allItems = role.sections.flatMap((s) =>
+    s.items.map((item) => ({ section: s.name, item }))
+  );
+  const total = allItems.length;
+  const done = allItems.filter(({ section, item }) => getProgress(section, item).completed).length;
+  const pct = total === 0 ? 0 : Math.round((done / total) * 100);
+
+  const region = document.getElementById("printReportRegion");
+  const name = state.identity.name || "QA Analyst";
+  const start = state.identity.startDate ? formatDate(state.identity.startDate) : "—";
+  const review = state.identity.reviewDate ? formatDate(state.identity.reviewDate) : "—";
+  const generated = formatDate(todayIso());
+
+  let html = `
+    <h1>QA Analyst Level 3 — Growth Evidence</h1>
+    <div class="header-meta">
+      <span><strong>Analyst:</strong> ${escapeHtml(name)}</span>
+      <span><strong>Started tracking:</strong> ${escapeHtml(start)}</span>
+      <span><strong>Target review:</strong> ${escapeHtml(review)}</span>
+      <span><strong>Report generated:</strong> ${escapeHtml(generated)}</span>
+    </div>
+    <div class="summary">
+      <strong>Progress:</strong> ${done} of ${total} expectations marked complete (${pct}%).
+      Source: <em>${escapeHtml(role.title)}</em>, PDD Confluence space.
+    </div>
+  `;
+
+  role.sections.forEach((section) => {
+    html += `<h2>${escapeHtml(section.name)}</h2>`;
+    section.items.forEach((item) => {
+      const data = getProgress(section.name, item);
+      const status = data.completed
+        ? `Completed${data.completedDate ? " · " + formatDate(data.completedDate) : ""}`
+        : "In progress";
+      const evidence = (data.notes || "").trim();
+      html += `
+        <div class="item ${data.completed ? "done" : "pending"}">
+          <div class="title-row">
+            <div>${escapeHtml(item)}</div>
+            <div class="status">${escapeHtml(status)}</div>
+          </div>
+          <div class="evidence ${evidence ? "" : "empty"}">${
+            evidence ? escapeHtml(evidence) : "No evidence captured yet."
+          }</div>
+        </div>
+      `;
+    });
+  });
+
+  html += `
+    <div class="print-footer">
+      Generated by the QA Growth Tracker on ${escapeHtml(generated)}.
+    </div>
+  `;
+
+  region.innerHTML = html;
+}
+
+/* ---------- Standalone HTML export ---------- */
+function exportStandaloneHtml() {
+  buildPrintReport();
+  const reportHtml = document.getElementById("printReportRegion").innerHTML;
+  const name = state.identity.name || "QA Analyst";
+  const generated = formatDate(todayIso());
+
+  const doc = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>QA Growth Report — ${escapeHtml(name)}</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; max-width: 820px; margin: 32px auto; padding: 0 24px; color: #1f2330; line-height: 1.5; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 24px 0 8px; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+  .header-meta { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 13px; color: #555; margin-bottom: 8px; }
+  .summary { background: #f4f6fb; border: 1px solid #d8deec; border-radius: 6px; padding: 10px 14px; margin: 14px 0 22px; }
+  .item { border: 1px solid #ddd; border-radius: 6px; padding: 10px 14px; margin-bottom: 12px; }
+  .item.done { border-left: 4px solid #1f8a4c; background: #f1faf3; }
+  .item.pending { border-left: 4px solid #b0b0b0; }
+  .item .title-row { display: flex; justify-content: space-between; gap: 14px; }
+  .item .status { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #555; white-space: nowrap; }
+  .item.done .status { color: #1f8a4c; }
+  .item .evidence { margin-top: 6px; font-size: 13px; white-space: pre-wrap; }
+  .item .evidence.empty { color: #999; font-style: italic; }
+  .print-footer { margin-top: 30px; padding-top: 8px; border-top: 1px solid #ddd; font-size: 11px; color: #777; text-align: center; }
+</style>
+</head>
+<body>
+${reportHtml}
+</body>
+</html>`;
+
+  const blob = new Blob([doc], { type: "text/html" });
+  downloadBlob(blob, `qa-growth-report-${name.replace(/\s+/g, "-").toLowerCase()}-${todayIso()}.html`);
+}
+
+/* ---------- Utilities ---------- */
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function todayIso() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function formatDate(iso) {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function escapeAttr(str) {
+  return escapeHtml(str);
+}
