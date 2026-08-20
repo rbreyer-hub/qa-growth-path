@@ -90,6 +90,27 @@ a:hover { text-decoration: underline; }
   border-color: var(--accent);
 }
 
+.sync-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.sync-status {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.sync-status.synced { color: var(--success); font-weight: 600; }
+.sync-status.error { color: var(--danger); font-weight: 600; }
+
+.btn.small {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
 .progress-row {
   display: flex;
   align-items: center;

@@ -27,6 +27,12 @@
         </label>
       </div>
 
+      <div class="sync-row no-print">
+        <span id="syncStatus" class="sync-status">Progress saved to this browser only.</span>
+        <button id="signInBtn" class="btn small">Sign in with Google to sync</button>
+        <button id="signOutBtn" class="btn small" hidden>Sign out</button>
+      </div>
+
       <div class="progress-row">
         <div class="progress-bar">
           <div class="progress-fill" id="progressFill"></div>
@@ -122,12 +128,20 @@
       <small>
         Source pages last synced 2026-05-22 from the
         <a href="https://patriotsoftware.atlassian.net/wiki/spaces/PDD" target="_blank" rel="noopener">PDD</a>
-        Confluence space. Data stays in your browser (localStorage); export to share.
+        Confluence space. Data is saved to your browser (localStorage) and, if you sign in, mirrored to your
+        private cloud account so it follows you across devices.
       </small>
     </div>
   </footer>
 
   <script src="data.js"></script>
   <script src="app.js"></script>
+
+  <!-- Cloud sync (optional): fill in firebase-config.js to enable. See README.md. -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="firebase-sync.js"></script>
 </body>
 </html>

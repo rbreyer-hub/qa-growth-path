@@ -15,6 +15,10 @@
  *
  * Keys are derived from L3 content so renaming a criterion in data.js will
  * surface as a "new" item rather than silently moving progress.
+ *
+ * localStorage is always the source of truth for rendering. firebase-sync.js
+ * (loaded after this file, optional) mirrors state to/from Firestore via the
+ * onLocalChange hook and applyRemoteState() below.
  */
 
 const STORAGE_KEY = "qa-growth-tracker.v1";
@@ -53,8 +57,28 @@ function defaultState() {
   };
 }
 
+// Hooked by firebase-sync.js to push changes to the cloud. Left null (no-op)
+// when cloud sync isn't configured or the user isn't signed in.
+let onLocalChange = null;
+
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  if (typeof onLocalChange === "function") onLocalChange(state);
+}
+
+// Overwrites identity/progress with a remote copy (e.g. from Firestore) and
+// re-renders. Used only by firebase-sync.js.
+function applyRemoteState(remote) {
+  if (remote.identity) state.identity = remote.identity;
+  if (remote.progress) state.progress = remote.progress;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  refreshIdentityFields();
+  renderL3Checklist();
+  updateProgress();
+}
+
+function hasProgressData(s) {
+  return !!(s && s.progress && Object.keys(s.progress).length > 0);
 }
 
 function progressKey(sectionName, itemText) {
@@ -74,13 +98,11 @@ function setProgress(sectionName, itemText, patch) {
 
 /* ---------- Identity ---------- */
 function hydrateIdentity() {
+  refreshIdentityFields();
+
   const name = document.getElementById("userName");
   const start = document.getElementById("startDate");
   const review = document.getElementById("reviewDate");
-
-  name.value = state.identity.name || "";
-  start.value = state.identity.startDate || "";
-  review.value = state.identity.reviewDate || "";
 
   name.addEventListener("input", () => {
     state.identity.name = name.value;
@@ -94,6 +116,12 @@ function hydrateIdentity() {
     state.identity.reviewDate = review.value;
     saveState();
   });
+}
+
+function refreshIdentityFields() {
+  document.getElementById("userName").value = state.identity.name || "";
+  document.getElementById("startDate").value = state.identity.startDate || "";
+  document.getElementById("reviewDate").value = state.identity.reviewDate || "";
 }
 
 /* ---------- L3 checklist ---------- */
