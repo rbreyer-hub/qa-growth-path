@@ -13,8 +13,10 @@
  *   }
  * }
  *
- * Keys are derived from L3 content so renaming a criterion in data.js will
- * surface as a "new" item rather than silently moving progress.
+ * Keys are derived from each role's content (section + item text) so renaming
+ * a criterion in data.js will surface as a "new" item rather than silently
+ * moving progress. Item text must stay unique across roles in data.js, since
+ * progress isn't namespaced by role.
  *
  * localStorage is always the source of truth for rendering. firebase-sync.js
  * (loaded after this file, optional) mirrors state to/from Firestore via the
@@ -27,8 +29,8 @@ const state = loadState();
 
 document.addEventListener("DOMContentLoaded", () => {
   hydrateIdentity();
-  renderL3Checklist();
-  renderReferenceRole("l2");
+  renderChecklist("l3", "l3-checklist");
+  renderChecklist("l2", "l2-checklist");
   renderReferenceRole("senior");
   wireTabs();
   wireActions();
@@ -73,7 +75,8 @@ function applyRemoteState(remote) {
   if (remote.progress) state.progress = remote.progress;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   refreshIdentityFields();
-  renderL3Checklist();
+  renderChecklist("l3", "l3-checklist");
+  renderChecklist("l2", "l2-checklist");
   updateProgress();
 }
 
@@ -124,17 +127,17 @@ function refreshIdentityFields() {
   document.getElementById("reviewDate").value = state.identity.reviewDate || "";
 }
 
-/* ---------- L3 checklist ---------- */
-function renderL3Checklist() {
-  const role = ROLES.l3;
-  document.getElementById("l3-title").textContent = role.title;
-  document.getElementById("l3-tagline").textContent = role.tagline;
-  document.getElementById("l3-intro").textContent = role.intro;
-  const src = document.getElementById("l3-source");
+/* ---------- Checklists (L3 growth target, L2 current role) ---------- */
+function renderChecklist(roleKey, containerId) {
+  const role = ROLES[roleKey];
+  document.getElementById(`${roleKey}-title`).textContent = role.title;
+  document.getElementById(`${roleKey}-tagline`).textContent = role.tagline;
+  document.getElementById(`${roleKey}-intro`).textContent = role.intro;
+  const src = document.getElementById(`${roleKey}-source`);
   src.href = role.sourceUrl;
   src.textContent = "View source in Confluence →";
 
-  const container = document.getElementById("l3-checklist");
+  const container = document.getElementById(containerId);
   container.innerHTML = "";
 
   role.sections.forEach((section) => {
@@ -162,7 +165,7 @@ function renderCriterion(sectionName, itemText) {
     </div>
     <div class="criterion-body">
       <div>
-        <label>Proof of completion / evidence</label>
+        <label>Notes</label>
         <textarea placeholder="Describe what you did, link to tickets, training sessions, PRs, dashboards, etc. The more concrete, the better — your manager will read this.">${escapeHtml(
           data.notes
         )}</textarea>
