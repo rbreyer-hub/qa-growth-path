@@ -181,6 +181,13 @@
   <!-- Print-only report layout. Hidden on screen, shown on print. -->
   <div id="printReportRegion" class="print-only"></div>
 
+  <div id="saveBanner" class="save-banner no-print" role="status" aria-live="polite">Saved</div>
+
+  <div id="screenshotLightbox" class="screenshot-lightbox no-print" hidden>
+    <button type="button" class="screenshot-lightbox-close" aria-label="Close preview">&times;</button>
+    <img id="screenshotLightboxImg" src="" alt="Full-size screenshot preview" />
+  </div>
+
   <footer class="app-footer no-print">
     <div class="container">
       <small>

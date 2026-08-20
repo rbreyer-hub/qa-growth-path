@@ -35,6 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderReferenceRole("senior");
   wireTabs();
   wireActions();
+  wireLightbox();
   updateProgress("l3");
   updateProgress("l2");
 });
@@ -68,6 +69,18 @@ let onLocalChange = null;
 function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   if (typeof onLocalChange === "function") onLocalChange(state);
+  showSaveBanner();
+}
+
+// Shows the "Saved" banner and keeps it up while changes keep coming in
+// (e.g. typing in Notes), fading it out a beat after the last save.
+let saveBannerTimer = null;
+function showSaveBanner() {
+  const banner = document.getElementById("saveBanner");
+  if (!banner) return;
+  banner.classList.add("visible");
+  clearTimeout(saveBannerTimer);
+  saveBannerTimer = setTimeout(() => banner.classList.remove("visible"), 1500);
 }
 
 // Overwrites identity/progress with a remote copy (e.g. from Firestore) and
@@ -182,7 +195,7 @@ function renderCriterion(roleKey, sectionName, itemText) {
             <span class="screenshot-hint">or click into Notes above and paste (Ctrl/Cmd+V) a copied screenshot</span>
           </div>
           <div class="screenshot-preview" ${data.screenshot ? "" : "hidden"}>
-            <img class="screenshot-thumb" src="${data.screenshot ? escapeAttr(data.screenshot) : ""}" alt="Attached screenshot" />
+            <img class="screenshot-thumb" src="${data.screenshot ? escapeAttr(data.screenshot) : ""}" alt="Attached screenshot" title="Click for full-size preview" />
             <button type="button" class="btn small danger screenshot-remove">Remove</button>
           </div>
         </div>
@@ -251,6 +264,8 @@ function wireScreenshot(wrapper, sectionName, itemText) {
     }
   }
 
+  thumb.addEventListener("click", () => openLightbox(thumb.src));
+
   addBtn.addEventListener("click", () => input.click());
   input.addEventListener("change", () => {
     applyScreenshot(input.files[0]);
@@ -294,6 +309,33 @@ function resizeImageFile(file) {
     reader.onerror = () => reject(reader.error);
     reader.readAsDataURL(file);
   });
+}
+
+/* ---------- Screenshot full-size preview (single shared lightbox) ---------- */
+function wireLightbox() {
+  const lightbox = document.getElementById("screenshotLightbox");
+  const closeBtn = lightbox.querySelector(".screenshot-lightbox-close");
+
+  closeBtn.addEventListener("click", closeLightbox);
+  lightbox.addEventListener("click", (evt) => {
+    if (evt.target === lightbox) closeLightbox();
+  });
+  document.addEventListener("keydown", (evt) => {
+    if (evt.key === "Escape" && !lightbox.hidden) closeLightbox();
+  });
+}
+
+function openLightbox(src) {
+  if (!src) return;
+  const lightbox = document.getElementById("screenshotLightbox");
+  document.getElementById("screenshotLightboxImg").src = src;
+  lightbox.hidden = false;
+}
+
+function closeLightbox() {
+  const lightbox = document.getElementById("screenshotLightbox");
+  lightbox.hidden = true;
+  document.getElementById("screenshotLightboxImg").src = "";
 }
 
 /* ---------- Quick capture support (consumed by quick-capture.js) ---------- */
