@@ -51,13 +51,6 @@
           <input type="date" id="reviewDate" />
         </label>
       </div>
-
-      <div class="progress-row">
-        <div class="progress-bar">
-          <div class="progress-fill" id="progressFill"></div>
-        </div>
-        <span class="progress-label" id="progressLabel">0 of 0 completed (0%)</span>
-      </div>
     </div>
   </header>
 
@@ -86,6 +79,27 @@
         </details>
       </div>
 
+      <div class="progress-row">
+        <div class="progress-bar">
+          <div class="progress-fill" id="l3-progressFill"></div>
+        </div>
+        <span class="progress-label" id="l3-progressLabel">0 of 0 completed (0%)</span>
+      </div>
+
+      <div class="quick-capture no-print">
+        <button type="button" class="quick-capture-toggle" id="l3-captureToggle" aria-expanded="false" disabled title="Sign in with Google to use quick capture">
+          ✨ Quick capture: paste a Slack message, email, or note
+        </button>
+        <div class="quick-capture-body" id="l3-captureBody" hidden>
+          <textarea id="l3-captureInput" placeholder="Paste the raw text here — a Slack thread, an email, a standup note. No need to edit it down."></textarea>
+          <div class="quick-capture-actions">
+            <button type="button" class="btn primary" id="l3-captureSuggest">Suggest matches</button>
+            <span class="quick-capture-status" id="l3-captureStatus"></span>
+          </div>
+          <div class="quick-capture-results" id="l3-captureResults"></div>
+        </div>
+      </div>
+
       <div id="l3-checklist"></div>
     </section>
 
@@ -97,6 +111,28 @@
         <p id="l2-intro"></p>
         <p><a id="l2-source" href="#" target="_blank" rel="noopener">View source in Confluence &rarr;</a></p>
       </div>
+
+      <div class="progress-row">
+        <div class="progress-bar">
+          <div class="progress-fill" id="l2-progressFill"></div>
+        </div>
+        <span class="progress-label" id="l2-progressLabel">0 of 0 completed (0%)</span>
+      </div>
+
+      <div class="quick-capture no-print">
+        <button type="button" class="quick-capture-toggle" id="l2-captureToggle" aria-expanded="false" disabled title="Sign in with Google to use quick capture">
+          ✨ Quick capture: paste a Slack message, email, or note
+        </button>
+        <div class="quick-capture-body" id="l2-captureBody" hidden>
+          <textarea id="l2-captureInput" placeholder="Paste the raw text here — a Slack thread, an email, a standup note. No need to edit it down."></textarea>
+          <div class="quick-capture-actions">
+            <button type="button" class="btn primary" id="l2-captureSuggest">Suggest matches</button>
+            <span class="quick-capture-status" id="l2-captureStatus"></span>
+          </div>
+          <div class="quick-capture-results" id="l2-captureResults"></div>
+        </div>
+      </div>
+
       <div id="l2-checklist"></div>
     </section>
 
@@ -164,7 +200,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js"></script>
   <script src="firebase-config.js"></script>
   <script src="firebase-sync.js"></script>
+  <script src="quick-capture.js"></script>
 </body>
 </html>

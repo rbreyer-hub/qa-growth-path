@@ -1,0 +1,12 @@
+{
+  "name": "qa-growth-functions",
+  "description": "Cloud Functions backing the QA Growth Tracker's Quick capture feature",
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-functions": "^5.0.0"
+  },
+  "private": true
+}

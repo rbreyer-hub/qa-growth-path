@@ -597,6 +597,118 @@ main { padding: 24px 0 60px; }
 
 .btn.danger:hover { background: var(--danger-btn-hover-bg); }
 
+/* ---------- Quick capture ---------- */
+.quick-capture {
+  margin-bottom: 16px;
+}
+
+.quick-capture-toggle {
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  background: var(--accent-soft);
+  border: 1px dashed var(--accent);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.quick-capture-toggle:hover { background: var(--surface-2); }
+
+.quick-capture-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.quick-capture-body {
+  margin-top: 10px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.quick-capture-body textarea {
+  width: 100%;
+  min-height: 90px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.quick-capture-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.quick-capture-status {
+  font-size: 12px;
+  color: var(--text-soft);
+}
+
+.quick-capture-status.error { color: var(--danger); font-weight: 600; }
+
+.quick-capture-results {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.quick-capture-suggestion {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  background: var(--surface-2);
+}
+
+.quick-capture-suggestion-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.quick-capture-confidence {
+  font-size: 10px;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.quick-capture-suggestion-item {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.quick-capture-note {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--text-soft);
+  white-space: pre-wrap;
+}
+
+.quick-capture-suggestion-actions {
+  display: flex;
+  gap: 8px;
+}
+
 /* ---------- Footer ---------- */
 .app-footer {
   padding: 18px 0 30px;

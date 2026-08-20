@@ -42,6 +42,30 @@ By default progress only lives in the current browser's `localStorage`. To sync 
 
 If `firebase-config.js` is left with placeholder values, the sign-in button is disabled and the app works exactly as before (localStorage only) — nothing else in the app depends on Firebase.
 
+## Quick capture setup (optional, requires cloud sync)
+
+Quick capture lets you paste a raw Slack message, email, or note into the L3 or L2 tab and get AI-suggested matches against the checklist criteria, so intangible items (communication, mentoring, accountability) don't rely on remembering to write evidence down later. It needs cloud sync (above) plus a small backend, since the classifier's API key can't live in client-side code:
+
+1. **Upgrade the Firebase project to the Blaze (pay-as-you-go) plan.** Cloud Functions require it. Usage here is tiny (one call per paste), but Google requires billing to be enabled regardless. In the console: bottom-left *Upgrade* link, or *Project settings → Usage and billing*.
+
+2. **Install the Firebase CLI** if you don't have it: `npm install -g firebase-tools`, then `firebase login`.
+
+3. **Get an Anthropic API key** from [console.anthropic.com](https://console.anthropic.com), then set it as a Functions secret (never committed to this repo):
+   ```
+   firebase functions:secrets:set ANTHROPIC_API_KEY
+   ```
+
+4. **Deploy the function** from the repo root:
+   ```
+   firebase deploy --only functions
+   ```
+
+5. Reload the site. The "✨ Quick capture" toggle on the L3/L2 tabs is disabled until you're signed in with Google (same sign-in as cloud sync) — once signed in, paste text and click *Suggest matches*.
+
+Suggestions are never applied automatically — you review each one and click *Attach as note* (or *Dismiss*) yourself. If the Blaze plan or the secret isn't set up, quick capture just stays disabled; nothing else in the app depends on it.
+
+See [`ROADMAP.md`](ROADMAP.md) for where this is headed next (automated Slack/email ingestion, a feedback loop to improve match quality over time).
+
 ## Export for your manager
 
 Open the **Export / Tools** tab:
@@ -64,3 +88,5 @@ If those pages change, update `data.js`.
 ## Privacy
 
 By default, all data stays in your browser's `localStorage` and nothing is sent to any server. If you opt into cloud sync (see above), your identity fields and progress/notes are sent to your own Firebase project's Firestore database, readable only by your signed-in Google account (enforced by `firestore.rules`) — no one else's data is stored there, and no one else can read yours. The Export buttons still produce files locally on your machine — share them deliberately.
+
+If you use quick capture, the text you paste is sent to your own Firebase project's Cloud Function, which forwards it to Anthropic's API for classification and does not store it. Only paste what you're comfortable leaving your browser.

@@ -34,7 +34,8 @@ document.addEventListener("DOMContentLoaded", () => {
   renderReferenceRole("senior");
   wireTabs();
   wireActions();
-  updateProgress();
+  updateProgress("l3");
+  updateProgress("l2");
 });
 
 /* ---------- Persistence ---------- */
@@ -77,7 +78,8 @@ function applyRemoteState(remote) {
   refreshIdentityFields();
   renderChecklist("l3", "l3-checklist");
   renderChecklist("l2", "l2-checklist");
-  updateProgress();
+  updateProgress("l3");
+  updateProgress("l2");
 }
 
 function hasProgressData(s) {
@@ -146,17 +148,20 @@ function renderChecklist(roleKey, containerId) {
     block.innerHTML = `<h3>${escapeHtml(section.name)}</h3>`;
 
     section.items.forEach((itemText) => {
-      block.appendChild(renderCriterion(section.name, itemText));
+      block.appendChild(renderCriterion(roleKey, section.name, itemText));
     });
 
     container.appendChild(block);
   });
 }
 
-function renderCriterion(sectionName, itemText) {
+function renderCriterion(roleKey, sectionName, itemText) {
   const data = getProgress(sectionName, itemText);
   const wrapper = document.createElement("div");
   wrapper.className = "criterion" + (data.completed ? " completed" : "");
+  wrapper.dataset.role = roleKey;
+  wrapper.dataset.section = sectionName;
+  wrapper.dataset.item = itemText;
 
   wrapper.innerHTML = `
     <div class="criterion-header">
@@ -192,7 +197,7 @@ function renderCriterion(sectionName, itemText) {
     }
     setProgress(sectionName, itemText, patch);
     wrapper.classList.toggle("completed", completed);
-    updateProgress();
+    updateProgress(roleKey);
   });
 
   notes.addEventListener("input", () => {
@@ -204,6 +209,21 @@ function renderCriterion(sectionName, itemText) {
   });
 
   return wrapper;
+}
+
+/* ---------- Quick capture support (consumed by quick-capture.js) ---------- */
+// Appends a note to a criterion (used when the user attaches an AI-suggested
+// match) and keeps the on-screen textarea in sync without a full re-render.
+function attachNoteToCriterion(roleKey, sectionName, itemText, noteText) {
+  const existing = getProgress(sectionName, itemText).notes || "";
+  const merged = existing ? `${existing}\n\n${noteText}` : noteText;
+  setProgress(sectionName, itemText, { notes: merged });
+
+  const container = document.getElementById(`${roleKey}-checklist`);
+  const wrapper = Array.from(container.querySelectorAll(".criterion")).find(
+    (el) => el.dataset.section === sectionName && el.dataset.item === itemText
+  );
+  if (wrapper) wrapper.querySelector("textarea").value = merged;
 }
 
 /* ---------- Reference roles (L2, Senior) ---------- */
@@ -249,17 +269,17 @@ function wireTabs() {
   });
 }
 
-/* ---------- Progress bar ---------- */
-function updateProgress() {
-  const allItems = ROLES.l3.sections.flatMap((s) =>
+/* ---------- Progress bars (one per role) ---------- */
+function updateProgress(roleKey) {
+  const allItems = ROLES[roleKey].sections.flatMap((s) =>
     s.items.map((i) => ({ section: s.name, item: i }))
   );
   const total = allItems.length;
   const done = allItems.filter(({ section, item }) => getProgress(section, item).completed).length;
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
 
-  document.getElementById("progressFill").style.width = `${pct}%`;
-  document.getElementById("progressLabel").textContent = `${done} of ${total} completed (${pct}%)`;
+  document.getElementById(`${roleKey}-progressFill`).style.width = `${pct}%`;
+  document.getElementById(`${roleKey}-progressLabel`).textContent = `${done} of ${total} completed (${pct}%)`;
 }
 
 /* ---------- Actions: export / import / report / reset ---------- */
