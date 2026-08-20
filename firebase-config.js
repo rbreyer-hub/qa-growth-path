@@ -5,10 +5,10 @@
 // Access is controlled by Firestore security rules and Authentication, not
 // by keeping this file private. See README.md for setup steps.
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID",
+  apiKey: "AIzaSyBiHXUJCjyYCcPsXT15pQOo0cxc9BQn6jI",
+  authDomain: "qa-growth.firebaseapp.com",
+  projectId: "qa-growth",
+  storageBucket: "qa-growth.firebasestorage.app",
+  messagingSenderId: "462260932665",
+  appId: "1:462260932665:web:83e6f5be7fa441a5783de8",
 };
