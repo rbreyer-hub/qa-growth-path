@@ -8,7 +8,8 @@
  *     "<sectionName>::<itemText>": {
  *       completed: boolean,
  *       completedDate: string,
- *       notes: string
+ *       notes: string,
+ *       screenshot: string | null   // data: URL of a resized JPEG, or null
  *     }
  *   }
  * }
@@ -92,7 +93,7 @@ function progressKey(sectionName, itemText) {
 
 function getProgress(sectionName, itemText) {
   const key = progressKey(sectionName, itemText);
-  return state.progress[key] || { completed: false, completedDate: "", notes: "" };
+  return state.progress[key] || { completed: false, completedDate: "", notes: "", screenshot: null };
 }
 
 function setProgress(sectionName, itemText, patch) {
@@ -174,6 +175,17 @@ function renderCriterion(roleKey, sectionName, itemText) {
         <textarea placeholder="Describe what you did, link to tickets, training sessions, PRs, dashboards, etc. The more concrete, the better — your manager will read this.">${escapeHtml(
           data.notes
         )}</textarea>
+        <div class="criterion-screenshot">
+          <div class="screenshot-attach" ${data.screenshot ? "hidden" : ""}>
+            <button type="button" class="btn small screenshot-add">Add screenshot</button>
+            <input type="file" accept="image/*" class="screenshot-input" hidden />
+            <span class="screenshot-hint">or click into Notes above and paste (Ctrl/Cmd+V) a copied screenshot</span>
+          </div>
+          <div class="screenshot-preview" ${data.screenshot ? "" : "hidden"}>
+            <img class="screenshot-thumb" src="${data.screenshot ? escapeAttr(data.screenshot) : ""}" alt="Attached screenshot" />
+            <button type="button" class="btn small danger screenshot-remove">Remove</button>
+          </div>
+        </div>
       </div>
       <div class="criterion-meta">
         <label>Date completed
@@ -208,7 +220,80 @@ function renderCriterion(roleKey, sectionName, itemText) {
     setProgress(sectionName, itemText, { completedDate: dateInput.value });
   });
 
+  wireScreenshot(wrapper, sectionName, itemText);
+
   return wrapper;
+}
+
+/* ---------- Screenshot attachment (one per criterion) ---------- */
+const MAX_SCREENSHOT_DIMENSION = 1280;
+const SCREENSHOT_JPEG_QUALITY = 0.72;
+
+function wireScreenshot(wrapper, sectionName, itemText) {
+  const attach = wrapper.querySelector(".screenshot-attach");
+  const addBtn = wrapper.querySelector(".screenshot-add");
+  const input = wrapper.querySelector(".screenshot-input");
+  const preview = wrapper.querySelector(".screenshot-preview");
+  const thumb = wrapper.querySelector(".screenshot-thumb");
+  const removeBtn = wrapper.querySelector(".screenshot-remove");
+
+  async function applyScreenshot(file) {
+    if (!file || !file.type.startsWith("image/")) return;
+    try {
+      const dataUrl = await resizeImageFile(file);
+      setProgress(sectionName, itemText, { screenshot: dataUrl });
+      thumb.src = dataUrl;
+      preview.hidden = false;
+      attach.hidden = true;
+    } catch (err) {
+      console.error("Failed to process screenshot:", err);
+      alert("Couldn't read that image — try a different file.");
+    }
+  }
+
+  addBtn.addEventListener("click", () => input.click());
+  input.addEventListener("change", () => {
+    applyScreenshot(input.files[0]);
+    input.value = "";
+  });
+
+  // Lets the user paste a copied screenshot directly instead of saving it to
+  // a file first — the common path when grabbing evidence from a Slack
+  // thread, ticket, or dashboard.
+  wrapper.addEventListener("paste", (evt) => {
+    const item = Array.from(evt.clipboardData?.items || []).find((i) => i.type.startsWith("image/"));
+    if (!item) return;
+    evt.preventDefault();
+    applyScreenshot(item.getAsFile());
+  });
+
+  removeBtn.addEventListener("click", () => {
+    setProgress(sectionName, itemText, { screenshot: null });
+    thumb.src = "";
+    preview.hidden = true;
+    attach.hidden = false;
+  });
+}
+
+function resizeImageFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, MAX_SCREENSHOT_DIMENSION / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", SCREENSHOT_JPEG_QUALITY));
+      };
+      img.onerror = () => reject(new Error("Could not decode image"));
+      img.src = reader.result;
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
 }
 
 /* ---------- Quick capture support (consumed by quick-capture.js) ---------- */
@@ -375,6 +460,7 @@ function buildPrintReport() {
           <div class="evidence ${evidence ? "" : "empty"}">${
             evidence ? escapeHtml(evidence) : "No evidence captured yet."
           }</div>
+          ${data.screenshot ? `<img class="evidence-screenshot" src="${escapeAttr(data.screenshot)}" alt="Screenshot evidence for ${escapeAttr(item)}" />` : ""}
         </div>
       `;
     });
@@ -415,6 +501,7 @@ function exportStandaloneHtml() {
   .item.done .status { color: #1f8a4c; }
   .item .evidence { margin-top: 6px; font-size: 13px; white-space: pre-wrap; }
   .item .evidence.empty { color: #999; font-style: italic; }
+  .item .evidence-screenshot { display: block; max-width: 100%; margin-top: 8px; border: 1px solid #ddd; border-radius: 4px; }
   .print-footer { margin-top: 30px; padding-top: 8px; border-top: 1px solid #ddd; font-size: 11px; color: #777; text-align: center; }
 </style>
 </head>
